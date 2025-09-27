@@ -7,9 +7,23 @@ interface SalesForecastChartProps {
 }
 
 export const SalesForecastChart: React.FC<SalesForecastChartProps> = ({ filters }) => {
-  const [activeTab, setActiveTab] = useState<'quarterly' | 'yearly'>('quarterly');
+  const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('quarterly');
 
   // Mock data for different time frames
+  const weeklyData = [
+    { period: 'Week 1', actual: 42000, forecast: 45000, confidence: 88 },
+    { period: 'Week 2', actual: 48000, forecast: 47000, confidence: 85 },
+    { period: 'Week 3', actual: 50000, forecast: 52000, confidence: 87 },
+    { period: 'Week 4', actual: 53000, forecast: 54000, confidence: 86 },
+  ];
+
+  const monthlyData = [
+    { period: 'Jan 2024', actual: 180000, forecast: 185000, confidence: 86 },
+    { period: 'Feb 2024', actual: 195000, forecast: 200000, confidence: 87 },
+    { period: 'Mar 2024', actual: 210000, forecast: 215000, confidence: 88 },
+    { period: 'Apr 2024', actual: 220000, forecast: 225000, confidence: 85 },
+  ];
+
   const quarterlyData = [
     { period: 'Q1 2024', actual: 180000, forecast: 195000, confidence: 85 },
     { period: 'Q2 2024', actual: 220000, forecast: 235000, confidence: 88 },
@@ -24,7 +38,11 @@ export const SalesForecastChart: React.FC<SalesForecastChartProps> = ({ filters 
     { period: '2025', actual: 0, forecast: 1180000, confidence: 76 },
   ];
 
-  const data = activeTab === 'quarterly' ? quarterlyData : yearlyData;
+  let data;
+  if (activeTab === 'weekly') data = weeklyData;
+  else if (activeTab === 'monthly') data = monthlyData;
+  else if (activeTab === 'quarterly') data = quarterlyData;
+  else data = yearlyData;
   const maxValue = Math.max(...data.map(d => Math.max(d.actual || 0, d.forecast)));
 
   return (
@@ -41,6 +59,26 @@ export const SalesForecastChart: React.FC<SalesForecastChartProps> = ({ filters 
         </div>
         
         <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 mt-4 sm:mt-0">
+          <button
+            onClick={() => setActiveTab('weekly')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              activeTab === 'weekly'
+                ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            Weekly
+          </button>
+          <button
+            onClick={() => setActiveTab('monthly')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              activeTab === 'monthly'
+                ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            Monthly
+          </button>
           <button
             onClick={() => setActiveTab('quarterly')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${

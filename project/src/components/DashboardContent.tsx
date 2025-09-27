@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import CsvUploadPage from './CsvUploadPage';
 import { StatsCards } from './StatsCards';
 import { SalesForecastChart } from './SalesForecastChart';
 import { TopProductsTable } from './TopProductsTable';
@@ -12,7 +13,8 @@ import { Download } from 'lucide-react';
 const TopChurnCustomers = () => {
   const [search, setSearch] = React.useState('');
   const [sortBy, setSortBy] = React.useState<'score'|'name'>('score');
-  const customers = Array.from({length: 10}, (_, i) => ({
+  const [customerCount, setCustomerCount] = React.useState(10);
+  const customers = Array.from({length: customerCount}, (_, i) => ({
     name: `Customer #${i+1}`,
     score: Math.round(80 + Math.random() * 20),
     segment: ['High', 'Medium', 'Low'][Math.floor(Math.random() * 3)],
@@ -27,48 +29,60 @@ const TopChurnCustomers = () => {
   const filtered = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
   const sorted = [...filtered].sort((a,b) => sortBy==='score'?b.score-a.score:a.name.localeCompare(b.name));
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Top 10 Customers Likely to Churn</h2>
-        <button className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
-          <Download className="w-4 h-4 mr-1" /> Export
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold">Top Customers Likely to Churn</h2>
+        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-lg">
+          <Download className="w-5 h-5 mr-2" /> Export
         </button>
       </div>
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 gap-2">
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customer..." className="px-3 py-1 border rounded text-sm" />
-        <div className="flex gap-2">
-          <button className={`px-2 py-1 rounded text-xs ${sortBy==='score'?'bg-blue-600 text-white':'bg-gray-100'}`} onClick={()=>setSortBy('score')}>Sort by Score</button>
-          <button className={`px-2 py-1 rounded text-xs ${sortBy==='name'?'bg-blue-600 text-white':'bg-gray-100'}`} onClick={()=>setSortBy('name')}>Sort by Name</button>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customer..." className="px-4 py-2 border rounded text-lg" />
+        <div className="flex gap-4 items-center">
+          <label htmlFor="customerCount" className="text-lg font-semibold">Show:</label>
+          <select
+            id="customerCount"
+            value={customerCount}
+            onChange={e => setCustomerCount(Number(e.target.value))}
+            className="px-3 py-2 rounded text-lg border"
+          >
+            {[10,20,30,40,50,60,70,80,90,100].map(n => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          <span className="text-lg">customers</span>
+          <button className={`px-3 py-2 rounded text-lg ${sortBy==='score'?'bg-blue-600 text-white':'bg-gray-100'}`} onClick={()=>setSortBy('score')}>Sort by Score</button>
+          <button className={`px-3 py-2 rounded text-lg ${sortBy==='name'?'bg-blue-600 text-white':'bg-gray-100'}`} onClick={()=>setSortBy('name')}>Sort by Name</button>
         </div>
       </div>
-      <table className="w-full text-sm">
+      <table className="w-full text-lg">
         <thead>
           <tr className="text-left text-gray-500 dark:text-gray-400">
-            <th>Customer</th>
-            <th>Score</th>
-            <th>Segment</th>
-            <th>Last Purchase</th>
-            <th>Risk</th>
-            <th>Profile</th>
+            <th className="py-2">Customer</th>
+            <th className="py-2">Score</th>
+            <th className="py-2">Segment</th>
+            <th className="py-2">Last Purchase</th>
+            <th className="py-2">Risk</th>
+            <th className="py-2">Profile</th>
           </tr>
         </thead>
         <tbody>
           {sorted.map((c,i)=>(
             <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
-              <td>{c.name}</td>
-              <td>{c.score}%</td>
-              <td>{c.segment}</td>
-              <td>{c.lastPurchase}</td>
-              <td><span className="px-2 py-1 rounded text-xs bg-red-100 text-red-700">{c.risk}</span></td>
-              <td>
-                <span className="text-xs text-gray-500">Age: {c.profile.age}, {c.profile.region}, Purchases: {c.profile.purchases}</span>
+              <td className="py-2 font-semibold">{c.name}</td>
+              <td className="py-2">{c.score}%</td>
+              <td className="py-2">{c.segment}</td>
+              <td className="py-2">{c.lastPurchase}</td>
+              <td className="py-2"><span className="px-3 py-2 rounded text-lg bg-red-100 text-red-700">{c.risk}</span></td>
+              <td className="py-2">
+                <span className="text-lg text-gray-500">Age: {c.profile.age}, {c.profile.region}, Purchases: {c.profile.purchases}</span>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="mt-4">
-        <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">Alert: {sorted[0]?.name} is at highest risk!</span>
+      <div className="mt-6">
+        <span className="px-4 py-2 bg-red-100 text-red-700 rounded-full text-lg font-bold">Alert: {sorted[0]?.name} is at highest risk!</span>
       </div>
     </div>
   );
@@ -164,11 +178,11 @@ const ChurnSegmentation = () => {
           <Download className="w-4 h-4 mr-1" /> Export
         </button>
       </div>
-      <div className="space-y-8 mt-2">
+      <div className="w-full flex flex-col md:flex-row md:space-x-8 md:items-stretch mt-2">
         {/* Detailed Pie Chart */}
-        <div className="flex flex-col items-center">
+        <div className="flex-1 flex flex-col items-center justify-center mb-8 md:mb-0 p-4">
           {/* Pie chart using SVG arcs for perfect circle and accurate segments */}
-          <svg width="240" height="240" viewBox="0 0 240 240">
+          <svg width="100%" height="240" viewBox="0 0 240 240">
             <circle r="100" cx="120" cy="120" fill="#e5e7eb" />
             {/* Pie segments */}
             {/* High Risk: 35% */}
@@ -180,16 +194,16 @@ const ChurnSegmentation = () => {
             {/* Critical: 10% */}
             <path d="M120 120 L62.2 210.6 A100 100 0 0 1 20 120 Z" fill="#60a5fa" />
           </svg>
-          <div className="mt-2 text-xs">
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#ef4444'}}></span> High Risk (35%)</div>
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#fbbf24'}}></span> Medium Risk (25%)</div>
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#34d399'}}></span> Low Risk (30%)</div>
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#60a5fa'}}></span> Critical (10%)</div>
+          <div className="mt-2 text-xs w-full text-center">
+            <div className="flex items-center justify-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#ef4444'}}></span> High Risk (35%)</div>
+            <div className="flex items-center justify-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#fbbf24'}}></span> Medium Risk (25%)</div>
+            <div className="flex items-center justify-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#34d399'}}></span> Low Risk (30%)</div>
+            <div className="flex items-center justify-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background:'#60a5fa'}}></span> Critical (10%)</div>
           </div>
         </div>
         {/* Detailed Bar Chart */}
-        <div className="flex flex-col items-center">
-          <svg width="320" height="220" viewBox="0 0 320 220">
+        <div className="flex-1 flex flex-col items-center justify-center mb-8 md:mb-0 p-4">
+          <svg width="100%" height="220" viewBox="0 0 320 220">
             {segments.map((seg, i) => (
               <rect key={seg.name} x={40 + i * 65} y={180 - seg.percent * 4.5} width="40" height={seg.percent * 4.5} fill={seg.color} />
             ))}
@@ -202,17 +216,17 @@ const ChurnSegmentation = () => {
               <text key={seg.name} x={60 + i * 65} y="210" fontSize="16" fill="#374151" textAnchor="middle" transform={`rotate(15 ${60 + i * 65},210)`}>{seg.name}</text>
             ))}
           </svg>
-          <div className="mt-2 text-sm">Bar chart: Segment size by churn risk</div>
+          <div className="mt-2 text-sm w-full text-center">Bar chart: Segment size by churn risk</div>
         </div>
         {/* Cluster Visualization with legend */}
-        <div className="flex flex-col items-center">
-          <svg width="140" height="120" viewBox="0 0 140 120">
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <svg width="100%" height="120" viewBox="0 0 140 120">
             <circle cx="40" cy="40" r="16" fill="#ef4444" />
             <circle cx="80" cy="40" r="13" fill="#fbbf24" />
             <circle cx="110" cy="70" r="18" fill="#34d399" />
             <circle cx="70" cy="90" r="10" fill="#60a5fa" />
           </svg>
-          <div className="mt-2 text-xs">
+          <div className="mt-2 text-xs w-full text-center">
             <span className="inline-block w-3 h-3 rounded-full" style={{background:'#ef4444'}}></span> High Risk
             <span className="inline-block w-3 h-3 rounded-full ml-2" style={{background:'#fbbf24'}}></span> Medium Risk
             <span className="inline-block w-3 h-3 rounded-full ml-2" style={{background:'#34d399'}}></span> Low Risk
@@ -322,84 +336,58 @@ const ChurnDrivers = () => {
 export const DashboardContent: React.FC = () => {
   // Track sidebar selection using window state (for demo, ideally use context)
   const [activeMain, setActiveMain] = useState(0);
-  const [activeSub, setActiveSub] = useState<number | null>(null);
+    const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+    // Toggle dark mode
+    const toggleDarkMode = () => {
+      setIsDark((prev) => {
+        if (prev) {
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.add('dark');
+        }
+        return !prev;
+      });
+    };
 
   // For demo, use window to sync with Sidebar
-  (window as any).setDashboardActive = (main: number, sub: number | null) => {
+  (window as any).setDashboardActive = (main: number) => {
     setActiveMain(main);
-    setActiveSub(sub);
   };
 
-  // Render content based on sidebar selection
-  if (activeMain === 0) {
-    // Sales Forecast
-    switch (activeSub) {
-      case 0:
-        return (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quarterly Sales Forecast</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Interactive forecast for next quarter</p>
-              </div>
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-                <Download className="w-4 h-4 mr-2" /> Export Report
-              </button>
-            </div>
-            <FilterPanel filters={{ timeFrame: 'Q1 2024', category: 'all', region: 'all' }} onFiltersChange={() => {}} />
-            <SalesForecastChart filters={{ timeFrame: 'Q1 2024', category: 'all', region: 'all' }} />
-          </div>
-        );
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Yearly Sales Forecast</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Forecast for the next year</p>
-              </div>
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-                <Download className="w-4 h-4 mr-2" /> Export Report
-              </button>
-            </div>
-            <FilterPanel filters={{ timeFrame: '2024', category: 'all', region: 'all' }} onFiltersChange={() => {}} />
-            <SalesForecastChart filters={{ timeFrame: '2024', category: 'all', region: 'all' }} />
-          </div>
-        );
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Top Products</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Products with highest predicted sales</p>
-              </div>
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-                <Download className="w-4 h-4 mr-2" /> Export List
-              </button>
-            </div>
-            <FilterPanel filters={{ timeFrame: '2024', category: 'all', region: 'all' }} onFiltersChange={() => {}} />
-            <TopProductsTable filters={{ timeFrame: '2024', category: 'all', region: 'all' }} />
-          </div>
-        );
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales Trends</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Key high/low sales periods</p>
-              </div>
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-                <Download className="w-4 h-4 mr-2" /> Export Chart
-              </button>
-            </div>
-            <FilterPanel filters={{ timeFrame: '2024', category: 'all', region: 'all' }} onFiltersChange={() => {}} />
-            <TrendsChart filters={{ timeFrame: '2024', category: 'all', region: 'all' }} />
-          </div>
-        );
-      default:
-        return (
+  // Top navigation bar
+  const navItems = [
+    { label: 'Sales Forecast', icon: <span className="mr-2">📊</span> },
+    { label: 'Churn Prediction', icon: <span className="mr-2">🔄</span> },
+    { label: 'Upload', icon: <span className="mr-2">📤</span> },
+  ];
+
+  return (
+    <div className="w-full">
+      {/* Top navigation tabs, replacing filter/export area */}
+      <div className="flex justify-center items-center gap-4 py-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+        {navItems.map((item, idx) => (
+          <button
+            key={item.label}
+            className={`flex items-center px-6 py-2 rounded-lg text-lg font-semibold transition-colors focus:outline-none ${activeMain === idx ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+            onClick={() => {
+              setActiveMain(idx);
+              // @ts-ignore
+              if (typeof window.setDashboardActive === 'function') {
+                // @ts-ignore
+                window.setDashboardActive(idx);
+              }
+            }}
+          >
+            {item.icon}
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Render content based on top nav selection */}
+      <div className="p-6">
+        {activeMain === 0 && (
           <div className="space-y-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales Forecasting Dashboard</h1>
@@ -411,49 +399,47 @@ export const DashboardContent: React.FC = () => {
             <TrendsChart filters={{ timeFrame: '2024', category: 'all', region: 'all' }} />
             <DemandForecastCard />
           </div>
-        );
-    }
-  } else if (activeMain === 1) {
-    // Churn Prediction
-    switch (activeSub) {
-      case 0:
-        return <TopChurnCustomers />;
-      case 1:
-        return <ChurnRateTrends />;
-      case 2:
-        return <ChurnDrivers />;
-      case 3:
-        return <ChurnSegmentation />;
-      default:
-        return (
+        )}
+        {activeMain === 1 && (
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Churn Prediction Dashboard</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Monitor and analyze customer churn risk</p>
-              </div>
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-                <Download className="w-4 h-4 mr-2" /> Export All
-              </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Churn Prediction Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Monitor and analyze customer churn risk</p>
             </div>
             <TopChurnCustomers />
-            <ChurnRateTrends />
-            <ChurnDrivers />
+            <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
+              <div className="flex-1 min-w-0 flex flex-col gap-6">
+                <ChurnRateTrends />
+                {/* Churn Risk Summary Card */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-6 flex flex-col items-center justify-center">
+                  <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300 mb-2">Churn Risk Summary</h3>
+                  <div className="flex gap-8 items-center">
+                    <div className="flex flex-col items-center">
+                      <span className="text-2xl font-bold text-blue-700 dark:text-blue-400">1,250</span>
+                      <span className="text-xs text-blue-700 dark:text-blue-400">Total Customers</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-2xl font-bold text-red-600 dark:text-red-400">8.2%</span>
+                      <span className="text-xs text-red-600 dark:text-red-400">Churn Rate</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">↓ 0.3%</span>
+                      <span className="text-xs text-green-600 dark:text-green-400">Trend (vs last month)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <ChurnDrivers />
+              </div>
+            </div>
             <ChurnSegmentation />
           </div>
-        );
-    }
-  }
-
-  // Default: General Dashboard
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">General Dashboard</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Overview of key metrics and top products</p>
+        )}
+        {activeMain === 2 && (
+          <CsvUploadPage />
+        )}
       </div>
-      <StatsCards />
-      <TopProductsTable filters={{ timeFrame: '2024', category: 'all', region: 'all' }} />
     </div>
   );
 };

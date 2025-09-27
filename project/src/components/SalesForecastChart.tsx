@@ -1,176 +1,164 @@
-import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Calendar } from 'lucide-react';
-import type { FilterState } from './DashboardContent';
+// SalesForecastChart.tsx
+import {
+  CategoryScale,
+  ChartData,
+  ChartDataset,
+  Chart as ChartJS,
+  ChartOptions,
+  Filler,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  ScriptableContext,
+  Title,
+  Tooltip,
+} from "chart.js";
+import { useEffect, useState } from "react";
+import { Line } from "react-chartjs-2";
 
-interface SalesForecastChartProps {
-  filters: FilterState;
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+/** API response shape */
+interface SalesApiResponse {
+  historical_dates: string[];
+  forecast_dates: string[];
+  historical_sales: number[]; // same length as historical_dates
+  forecast_sales: number[]; // same length as forecast_dates
 }
 
-export const SalesForecastChart: React.FC<SalesForecastChartProps> = ({ filters }) => {
-  const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('quarterly');
+const API_BASE = "http://192.168.182.1:5000"; // <-- endpoint you provided
 
-  // Mock data for different time frames
-  const weeklyData = [
-    { period: 'Week 1', actual: 42000, forecast: 45000, confidence: 88 },
-    { period: 'Week 2', actual: 48000, forecast: 47000, confidence: 85 },
-    { period: 'Week 3', actual: 50000, forecast: 52000, confidence: 87 },
-    { period: 'Week 4', actual: 53000, forecast: 54000, confidence: 86 },
-  ];
+function SalesForecastChart(): JSX.Element {
+  const [chartData, setChartData] = useState<ChartData<
+    "line",
+    (number | null)[]
+  > | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [forecastDays, setForecastDays] = useState<number>(90); // default next quarter
 
-  const monthlyData = [
-    { period: 'Jan 2024', actual: 180000, forecast: 185000, confidence: 86 },
-    { period: 'Feb 2024', actual: 195000, forecast: 200000, confidence: 87 },
-    { period: 'Mar 2024', actual: 210000, forecast: 215000, confidence: 88 },
-    { period: 'Apr 2024', actual: 220000, forecast: 225000, confidence: 85 },
-  ];
+  useEffect(() => {
+    setLoading(true);
+    const url = `${API_BASE}/api/full_sales_view?days=${forecastDays}`;
 
-  const quarterlyData = [
-    { period: 'Q1 2024', actual: 180000, forecast: 195000, confidence: 85 },
-    { period: 'Q2 2024', actual: 220000, forecast: 235000, confidence: 88 },
-    { period: 'Q3 2024', actual: 0, forecast: 275000, confidence: 82 },
-    { period: 'Q4 2024', actual: 0, forecast: 315000, confidence: 79 },
-  ];
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<SalesApiResponse>;
+      })
+      .then((data) => {
+        const allLabels = [...data.historical_dates, ...data.forecast_dates];
 
-  const yearlyData = [
-    { period: '2022', actual: 680000, forecast: 680000, confidence: 100 },
-    { period: '2023', actual: 820000, forecast: 820000, confidence: 100 },
-    { period: '2024', actual: 400000, forecast: 1020000, confidence: 84 },
-    { period: '2025', actual: 0, forecast: 1180000, confidence: 76 },
-  ];
+        const historicalDataset: ChartDataset<"line", number[]> = {
+          label: "Historical Daily Sales",
+          data: data.historical_sales,
+          borderColor: "#3b82f6",
+          backgroundColor: "#3b82f6",
+          pointRadius: 1,
+          tension: 0.3,
+          fill: false,
+        };
 
-  let data;
-  if (activeTab === 'weekly') data = weeklyData;
-  else if (activeTab === 'monthly') data = monthlyData;
-  else if (activeTab === 'quarterly') data = quarterlyData;
-  else data = yearlyData;
-  const maxValue = Math.max(...data.map(d => Math.max(d.actual || 0, d.forecast)));
+        const forecastDataset: ChartDataset<"line", (number | null)[]> = {
+          label: "Forecasted Sales",
+          // pad with nulls for historical portion, then add forecast values
+          data: Array(data.historical_sales.length)
+            .fill(null)
+            .concat(data.forecast_sales),
+          borderColor: "#3b82f6",
+          borderDash: [5, 5],
+          pointRadius: 0,
+          tension: 0.3,
+          fill: true,
+          // Chart.js allows backgroundColor to be a scriptable function
+          backgroundColor: (context: ScriptableContext<"line">) => {
+            const chartCtx = context.chart.ctx as CanvasRenderingContext2D;
+            const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, "rgba(59, 130, 246, 0.3)");
+            gradient.addColorStop(1, "rgba(59, 130, 246, 0)");
+            return gradient;
+          },
+        };
+
+        const chartData: ChartData<"line", (number | null)[]> = {
+          labels: allLabels,
+          datasets: [historicalDataset as any, forecastDataset],
+        };
+
+        setChartData(chartData);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching sales data:", err);
+        setLoading(false);
+      });
+  }, [forecastDays]);
+
+  const options: ChartOptions<"line"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "top" },
+      title: {
+        display: true,
+        text: `Historical Sales & ${forecastDays}-Day Forecast`,
+        font: { size: 18, weight: "600" } as any,
+        color: "#334155",
+      },
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: "Sales Amount ($)" },
+        grid: { color: "#e2e8f0" },
+      },
+    },
+  };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-            <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sales Forecast</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Actual vs Predicted Performance</p>
-          </div>
-        </div>
-        
-        <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 mt-4 sm:mt-0">
-          <button
-            onClick={() => setActiveTab('weekly')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'weekly'
-                ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            Weekly
-          </button>
-          <button
-            onClick={() => setActiveTab('monthly')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'monthly'
-                ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setActiveTab('quarterly')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'quarterly'
-                ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            Quarterly
-          </button>
-          <button
-            onClick={() => setActiveTab('yearly')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'yearly'
-                ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            Yearly
-          </button>
-        </div>
+    <div className="bg-white p-4 md:p-6 rounded-lg shadow-md h-[450px] flex flex-col">
+      <div className="flex justify-end space-x-2 mb-4">
+        <button
+          onClick={() => setForecastDays(90)}
+          className={`px-3 py-1 text-sm rounded-md ${
+            forecastDays === 90
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200 text-gray-700"
+          }`}
+        >
+          Next Quarter
+        </button>
+        <button
+          onClick={() => setForecastDays(365)}
+          className={`px-3 py-1 text-sm rounded-md ${
+            forecastDays === 365
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200 text-gray-700"
+          }`}
+        >
+          Next Year
+        </button>
       </div>
 
-      <div className="space-y-4">
-        {data.map((item, index) => (
-          <div key={item.period} className="group">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item.period}</span>
-              <div className="flex items-center space-x-4">
-                {item.actual > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      ${(item.actual / 1000).toFixed(0)}K
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full opacity-60"></div>
-                  <span className="text-xs text-gray-600 dark:text-gray-400">
-                    ${(item.forecast / 1000).toFixed(0)}K ({item.confidence}%)
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="relative h-12 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-              {/* Forecast bar (background) */}
-              <div
-                className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-400 to-purple-600 opacity-30 rounded-lg transition-all duration-1000 ease-out"
-                style={{ width: `${(item.forecast / maxValue) * 100}%` }}
-              />
-              
-              {/* Actual bar (foreground) */}
-              {item.actual > 0 && (
-                <div
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-sm transition-all duration-1000 ease-out group-hover:shadow-md"
-                  style={{ 
-                    width: `${(item.actual / maxValue) * 100}%`,
-                    animationDelay: `${index * 200}ms`
-                  }}
-                />
-              )}
-              
-              {/* Confidence indicator */}
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-                <TrendingUp className={`w-3 h-3 ${
-                  item.confidence >= 85 ? 'text-green-500' : 
-                  item.confidence >= 70 ? 'text-yellow-500' : 'text-red-500'
-                }`} />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">Actual Sales</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-purple-500 opacity-60 rounded-full"></div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">Forecasted Sales</span>
-          </div>
-        </div>
-        <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
-          <Calendar className="w-3 h-3" />
-          <span>Updated 2 hours ago</span>
-        </div>
+      <div className="flex-grow">
+        {loading ? (
+          <div className="text-center p-4">Loading sales chart...</div>
+        ) : (
+          chartData && <Line options={options} data={chartData} />
+        )}
       </div>
     </div>
   );
-};
+}
+
+export default SalesForecastChart;

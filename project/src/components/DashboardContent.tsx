@@ -13,8 +13,11 @@ import { Download } from 'lucide-react';
 const TopChurnCustomers = () => {
   const [search, setSearch] = React.useState('');
   const [sortBy, setSortBy] = React.useState<'score'|'name'>('score');
-  const [customerCount, setCustomerCount] = React.useState(10);
-  const customers = Array.from({length: customerCount}, (_, i) => ({
+  const [customerCount, setCustomerCount] = React.useState(10); // total customers to show
+  const [page, setPage] = React.useState(1);
+  const maxCustomers = 100;
+  // Simulate 100 customers
+  const allCustomers = Array.from({length: maxCustomers}, (_, i) => ({
     name: `Customer #${i+1}`,
     score: Math.round(80 + Math.random() * 20),
     segment: ['High', 'Medium', 'Low'][Math.floor(Math.random() * 3)],
@@ -26,10 +29,19 @@ const TopChurnCustomers = () => {
       purchases: Math.floor(Math.random()*20)+1
     }
   }));
-  const filtered = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+  // Filter and sort
+  const filtered = allCustomers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
   const sorted = [...filtered].sort((a,b) => sortBy==='score'?b.score-a.score:a.name.localeCompare(b.name));
+  // Only show up to customerCount
+  const limited = sorted.slice(0, customerCount);
+  // Pagination: always 10 per page
+  const pageSize = 10;
+  const totalPages = Math.ceil(limited.length / pageSize);
+  const paginated = limited.slice((page-1)*pageSize, page*pageSize);
+  // Reset page if customerCount, search, or sort changes
+  React.useEffect(() => { setPage(1); }, [customerCount, search, sortBy]);
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8">
+  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Top Customers Likely to Churn</h2>
         <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-lg">
@@ -67,7 +79,7 @@ const TopChurnCustomers = () => {
           </tr>
         </thead>
         <tbody>
-          {sorted.map((c,i)=>(
+          {paginated.map((c,i)=>(
             <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
               <td className="py-2 font-semibold">{c.name}</td>
               <td className="py-2">{c.score}%</td>
@@ -81,8 +93,22 @@ const TopChurnCustomers = () => {
           ))}
         </tbody>
       </table>
+      {/* Pagination controls */}
+      <div className="flex justify-center items-center gap-4 mt-4">
+        <button
+          className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-lg font-semibold disabled:opacity-50"
+          onClick={() => setPage(page-1)}
+          disabled={page === 1}
+        >Previous</button>
+        <span className="text-lg">Page {page} of {totalPages}</span>
+        <button
+          className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-lg font-semibold disabled:opacity-50"
+          onClick={() => setPage(page+1)}
+          disabled={page === totalPages}
+        >Next</button>
+      </div>
       <div className="mt-6">
-        <span className="px-4 py-2 bg-red-100 text-red-700 rounded-full text-lg font-bold">Alert: {sorted[0]?.name} is at highest risk!</span>
+        <span className="px-4 py-2 bg-red-100 text-red-700 rounded-full text-lg font-bold">Alert: {paginated[0]?.name} is at highest risk!</span>
       </div>
     </div>
   );

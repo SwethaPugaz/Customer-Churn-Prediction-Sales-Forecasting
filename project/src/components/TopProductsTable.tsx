@@ -34,7 +34,9 @@ export const TopProductsTable: React.FC<TopProductsTableProps> = ({ filters }) =
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 py-6 px-2">
-      <div className="w-full max-w-5xl grid grid-cols-1 gap-4">
+      <div className="w-full max-w-5xl">
+  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 text-left">Top 10 Products</h2>
+        <div className="grid grid-cols-1 gap-4">
         {products.map((product, index) => (
           <div
             key={product.rank}
@@ -75,6 +77,7 @@ export const TopProductsTable: React.FC<TopProductsTableProps> = ({ filters }) =
             </div>
           </div>
         ))}
+         </div>
       </div>
     </div>
   );

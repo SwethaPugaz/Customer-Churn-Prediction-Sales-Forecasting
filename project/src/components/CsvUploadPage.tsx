@@ -1,9 +1,10 @@
 import Papa from "papaparse";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 
 type Row = Record<string, any>;
 
-const BACKEND_UPLOAD_URL = "http://127.0.0.1:5000/api/upload_csv"; // adjust if needed
+const BACKEND_UPLOAD_URL = "http://192.168.182.1:5000/api/upload_data"; // adjust if needed
 
 const CsvUploadPage: React.FC = () => {
   const [csvData, setCsvData] = useState<Row[]>([]);
@@ -17,8 +18,8 @@ const CsvUploadPage: React.FC = () => {
   const [dragActive, setDragActive] = useState(false);
   const lastFileRef = useRef<File | null>(null);
 
-  // parse file with PapaParse
-  const parseFile = useCallback((file: File) => {
+  // --- CSV parsing (PapaParse) ---
+  const parseCsvFile = useCallback((file: File) => {
     setStatusMessage(null);
     setUploading(true);
     Papa.parse<Row>(file, {
@@ -42,9 +43,56 @@ const CsvUploadPage: React.FC = () => {
     });
   }, []);
 
-  // handle input selection
+  // --- Excel parsing (SheetJS / xlsx) ---
+  const parseExcelFile = useCallback((file: File) => {
+    setStatusMessage(null);
+    setUploading(true);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        // read as array for binary formats
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+
+        // get header row (header:1 returns array of arrays)
+        const sheetAsArray = XLSX.utils.sheet_to_json<any>(worksheet, {
+          header: 1,
+        });
+        const headers: string[] = Array.isArray(sheetAsArray[0])
+          ? (sheetAsArray[0].map((h: any) => String(h ?? "")) as string[])
+          : [];
+
+        // convert to array of objects (default uses headers from sheet)
+        const json = XLSX.utils.sheet_to_json<Row>(worksheet, { defval: "" });
+
+        setCsvData(json || []);
+        setColumns(
+          headers.length ? headers : json[0] ? Object.keys(json[0]) : []
+        );
+        setUploading(false);
+        setStatusMessage(`Parsed ${json?.length ?? 0} rows`);
+        setStatusType("success");
+      } catch (err) {
+        console.error("Excel parse error:", err);
+        setCsvData([]);
+        setColumns([]);
+        setUploading(false);
+        setStatusMessage("Failed to parse Excel file.");
+        setStatusType("error");
+      }
+    };
+
+    // read as array buffer for xlsx/xls
+    reader.readAsArrayBuffer(file);
+  }, []);
+
+  // handle input selection (decide parser based on extension)
   const handleFileInput = (file?: File | null) => {
     if (!file) return;
+
     // prevent re-parsing the same file object repeatedly
     if (
       lastFileRef.current &&
@@ -55,9 +103,20 @@ const CsvUploadPage: React.FC = () => {
       setStatusType("info");
       return;
     }
+
     lastFileRef.current = file;
     setFilename(file.name);
-    parseFile(file);
+
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+
+    if (ext === "csv") {
+      parseCsvFile(file);
+    } else if (ext === "xls" || ext === "xlsx") {
+      parseExcelFile(file);
+    } else {
+      setStatusMessage("Unsupported file type. Use .csv, .xls or .xlsx");
+      setStatusType("error");
+    }
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,8 +131,9 @@ const CsvUploadPage: React.FC = () => {
     setDragActive(false);
     const file = e.dataTransfer.files?.[0] ?? null;
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      setStatusMessage("Please upload a .csv file.");
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!["csv", "xls", "xlsx"].includes(ext)) {
+      setStatusMessage("Please upload a .csv, .xls or .xlsx file.");
       setStatusType("error");
       return;
     }
@@ -181,12 +241,13 @@ const CsvUploadPage: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-semibold text-black dark:text-black">
-                  Upload CSV Data
+                  Upload CSV / Excel Data
                 </h1>
                 <p className="text-sm text-black dark:text-gray-700 mt-1">
-                  Drop a CSV file or click to choose. The CSV will be parsed
-                  locally for preview. You can then upload the original file to
-                  the server or download the parsed JSON.
+                  Drop a CSV or Excel file (.csv, .xls, .xlsx) or click to
+                  choose. The file will be parsed locally for preview. You can
+                  then upload the original file to the server or download the
+                  parsed JSON.
                 </p>
               </div>
             </div>
@@ -205,12 +266,15 @@ const CsvUploadPage: React.FC = () => {
               <input
                 id="file-input"
                 type="file"
-                accept=".csv"
+                accept=".csv,.xls,.xlsx"
                 onChange={(e) => {
                   const f = e.target.files?.[0] ?? null;
                   if (!f) return;
-                  if (!f.name.toLowerCase().endsWith(".csv")) {
-                    setStatusMessage("Only .csv files are supported.");
+                  const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
+                  if (!["csv", "xls", "xlsx"].includes(ext)) {
+                    setStatusMessage(
+                      "Only .csv, .xls or .xlsx files are supported."
+                    );
                     setStatusType("error");
                     return;
                   }
@@ -220,10 +284,10 @@ const CsvUploadPage: React.FC = () => {
               />
               <div className="flex flex-col items-center">
                 <div className="text-lg font-medium text-blue-600">
-                  Click or drop CSV here
+                  Click or drop file here
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Accepted: .csv · Max recommended size: 10MB
+                  Accepted: .csv, .xls, .xlsx · Max recommended size: 10MB
                 </div>
                 <div className="mt-3 text-sm text-gray-600">
                   {filename || "No file selected"}
@@ -280,7 +344,7 @@ const CsvUploadPage: React.FC = () => {
           </div>
 
           {/* Right: preview table */}
-          <div className="flex-1">
+          {/* <div className="flex-1">
             <div className="bg-gray-100 dark:bg-white rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
@@ -337,7 +401,7 @@ const CsvUploadPage: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
         </div>
 
         <div className="mt-6 text-xs text-gray-500">

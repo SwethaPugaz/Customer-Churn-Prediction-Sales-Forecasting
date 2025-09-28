@@ -219,15 +219,4 @@ backend/
 4. Push to the branch
 5. Create a Pull Request
 
-## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👥 Authors
-
-- **Swetha Pugaz** - *Initial work* - [SwethaPugaz](https://github.com/SwethaPugaz)
-
-## 🙏 Acknowledgments
-
-- Thanks to the open-source community for the amazing ML libraries
-- Special thanks to contributors and testers

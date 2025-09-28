@@ -17,6 +17,7 @@ import SalesForecastChart from "./SalesForecastChart";
 import { StatsCards } from "./StatsCards";
 import { TopProductsTable } from "./TopProductsTable";
 import { TrendsChart } from "./TrendsChart";
+import ChurnSegmentationx from "./pieChart";
 
 // import { StatsCards } from "@/components/StatsCards";
 
@@ -825,6 +826,7 @@ export const DashboardContent: React.FC = () => {
               </p>
             </div>
             <TopChurnCustomers />
+            <ChurnSegmentationx />
 
             <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
               <div className="flex-1 min-w-0 flex flex-col gap-6">

@@ -7,7 +7,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 type SegResponse = Record<string, number>;
 
-export default function ChurnSegmentation() {
+export default function ChurnSegmentationx() {
   const [data, setData] = useState<SegResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,15 +37,12 @@ export default function ChurnSegmentation() {
     };
   }, []);
 
-  // Desired order and colors
   const order = ["High Risk", "Medium Risk", "Low Risk"];
   const colors = ["#ef4444", "#fbbf24", "#34d399"]; // red, yellow, green
 
   const chart = React.useMemo(() => {
     if (!data) return null;
-    // ensure values follow `order`, fallback to keys present
     const labels = order.filter((k) => k in data);
-    // include any other keys after the ordered ones
     const extra = Object.keys(data).filter((k) => !labels.includes(k));
     const allLabels = [...labels, ...extra];
     const values = allLabels.map((k) => data[k] ?? 0);
@@ -66,7 +63,10 @@ export default function ChurnSegmentation() {
 
   function exportCSV() {
     if (!data) return;
-    const rows = ["segment,count", ...Object.entries(data).map(([k, v]) => `${k},${v}`)];
+    const rows = [
+      "segment,count",
+      ...Object.entries(data).map(([k, v]) => `${k},${v}`),
+    ];
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -76,28 +76,40 @@ export default function ChurnSegmentation() {
     URL.revokeObjectURL(url);
   }
 
-  // compute percentages for legend
   const summary = React.useMemo(() => {
-    if (!data) return [] as { label: string; value: number; pct: string; color: string }[];
+    if (!data) return [];
     const total = Object.values(data).reduce((s, v) => s + v, 0);
-    const entries = Object.entries(data).map(([k, v]) => ({ label: k, value: v }));
-    // sort by our order
-    entries.sort((a, b) => (order.indexOf(a.label) - order.indexOf(b.label)) || 0);
-    return entries.map((e, i) => ({ label: e.label, value: e.value, pct: `${Math.round((e.value / Math.max(1, total)) * 100)}%`, color: colors[i] ?? "#60a5fa" }));
+    const entries = Object.entries(data).map(([k, v]) => ({
+      label: k,
+      value: v,
+    }));
+    entries.sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label));
+    return entries.map((e, i) => ({
+      label: e.label,
+      value: e.value,
+      pct: `${Math.round((e.value / Math.max(1, total)) * 100)}%`,
+      color: colors[i] ?? "#60a5fa",
+    }));
   }, [data]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Customer Segmentation by Churn Likelihood</h2>
+        <h2 className="text-lg font-semibold">
+          Customer Segmentation by Churn Likelihood
+        </h2>
         <div className="flex items-center gap-2">
-          <button onClick={exportCSV} className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
+          <button
+            onClick={exportCSV}
+            className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+          >
             <Download className="w-4 h-4 mr-1" /> Export
           </button>
         </div>
       </div>
 
       <div className="w-full flex flex-col md:flex-row md:space-x-8 md:items-stretch mt-2">
+        {/* Left: Chart */}
         <div className="flex-1 flex flex-col items-center justify-center mb-8 md:mb-0 p-4">
           <div className="w-full max-w-xs">
             {loading ? (
@@ -107,40 +119,65 @@ export default function ChurnSegmentation() {
             ) : error ? (
               <div className="text-sm text-red-500">Error: {error}</div>
             ) : chart ? (
-              <Doughnut data={chart} options={{ responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } } }} />
+              <Doughnut
+                data={chart}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: true,
+                  plugins: { legend: { display: false } },
+                }}
+              />
             ) : (
               <div className="text-sm text-gray-500">No data</div>
             )}
           </div>
 
-          <div className="mt-2 text-xs w-full text-center">
+          {/* Legend below chart → left aligned */}
+          <div className="mt-4 text-sm w-full text-left">
             {summary.map((s) => (
-              <div key={s.label} className="flex items-center justify-center gap-2 mt-2">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ background: s.color }} />
+              <div key={s.label} className="flex items-center gap-2 mt-2">
+                <span
+                  className="inline-block w-3 h-3 rounded-full"
+                  style={{ background: s.color }}
+                />
                 <span className="font-medium">{s.label}</span>
-                <span className="text-gray-500 ml-2">{s.pct} ({s.value})</span>
+                <span className="text-gray-500 ml-2">
+                  {s.pct} ({s.value})
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex-1 p-4">
-          <div className="text-sm text-gray-600 dark:text-gray-300">Detailed counts</div>
-          <div className="mt-3 space-y-2">
-            {data && Object.entries(data).map(([k, v]) => (
-              <div key={k} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="inline-block w-3 h-3 rounded-full" style={{ background: (colors[order.indexOf(k)] ?? "#60a5fa") }} />
-                  <div className="font-medium">{k}</div>
+        {/* Right: Big Centered Counts */}
+        <div className="flex-1 p-6 flex flex-col justify-center items-center">
+          <div className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6 underline">
+            Detailed Counts
+          </div>
+          <div className="space-y-6 text-center">
+            {data &&
+              Object.entries(data).map(([k, v]) => (
+                <div
+                  key={k}
+                  className="flex flex-col items-center justify-center"
+                >
+                  <div className="flex items-center gap-3 text-2xl font-semibold">
+                    <span
+                      className="inline-block w-6 h-6 rounded-full"
+                      style={{
+                        background: colors[order.indexOf(k)] ?? "#60a5fa",
+                      }}
+                    />
+                    <div>{k}</div>
+                  </div>
+                  <div className="text-4xl font-extrabold text-blue-600 mt-2">
+                    {v}
+                  </div>
                 </div>
-                <div className="font-semibold">{v}</div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       </div>
-
-      <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">Note: values are fetched from <code>/api/churn_segmentation</code></p>
     </div>
   );
 }

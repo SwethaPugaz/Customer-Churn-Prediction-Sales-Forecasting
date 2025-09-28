@@ -8,7 +8,6 @@ import {
   Title,
   Tooltip,
 } from "chart.js";
-import { Download } from "lucide-react";
 
 import { Line } from "react-chartjs-2";
 import CsvUploadPage from "./CsvUploadPage";
@@ -660,9 +659,9 @@ const ChurnDrivers = () => {
         <h2 className="text-lg font-semibold">
           Churn Drivers & Customer Insights
         </h2>
-        <button className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
+        {/* <button className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
           <Download className="w-4 h-4 mr-1" /> Export
-        </button>
+        </button> */}
       </div>
       <div className="flex gap-4 mb-4">
         {drivers.map((d) => (

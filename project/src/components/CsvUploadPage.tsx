@@ -171,7 +171,7 @@ const CsvUploadPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-8">
-      <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 p-8">
+      <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white dark:to-gray-100 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 p-8">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Left: upload card */}
           <div className="flex-1">
@@ -180,10 +180,10 @@ const CsvUploadPage: React.FC = () => {
                 <span className="text-3xl">📤</span>
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                <h1 className="text-2xl font-semibold text-black dark:text-black">
                   Upload CSV Data
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                <p className="text-sm text-black dark:text-gray-700 mt-1">
                   Drop a CSV file or click to choose. The CSV will be parsed
                   locally for preview. You can then upload the original file to
                   the server or download the parsed JSON.
@@ -199,7 +199,7 @@ const CsvUploadPage: React.FC = () => {
               className={`mt-6 block rounded-xl border-2 border-dashed p-6 text-center cursor-pointer transition ${
                 dragActive
                   ? "border-blue-500 bg-blue-50/60"
-                  : "border-gray-200 bg-white dark:bg-gray-800/60"
+                  : "border-gray-200 bg-gray-100 dark:bg-white/60"
               }`}
             >
               <input
@@ -250,7 +250,7 @@ const CsvUploadPage: React.FC = () => {
                 className={`px-4 py-2 rounded-lg font-medium shadow-sm transition ${
                   !csvData.length
                     ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                    : "bg-white border border-gray-200 hover:bg-gray-50"
+                    : "bg-gray-100 border border-gray-200 hover:bg-gray-50"
                 }`}
               >
                 Download JSON
@@ -281,13 +281,13 @@ const CsvUploadPage: React.FC = () => {
 
           {/* Right: preview table */}
           <div className="flex-1">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+            <div className="bg-gray-100 dark:bg-white rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h2 className="text-lg font-semibold text-black dark:text-black">
                     Preview
                   </h2>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="text-sm text-black dark:text-gray-700">
                     {csvData.length} rows • {columns.length} columns
                   </div>
                 </div>
@@ -296,12 +296,12 @@ const CsvUploadPage: React.FC = () => {
               {csvData.length > 0 ? (
                 <div className="overflow-auto max-h-[420px] border border-gray-100 dark:border-gray-700 rounded">
                   <table className="min-w-full text-sm">
-                    <thead className="sticky top-0 bg-gray-50 dark:bg-gray-900/50 z-10">
+                    <thead className="sticky top-0 bg-gray-200 dark:bg-white/50 z-10">
                       <tr>
                         {columns.map((col) => (
                           <th
                             key={col}
-                            className="px-3 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-300 border-b"
+                            className="px-3 py-2 text-left text-xs font-medium text-gray-600 dark:text-black border-b"
                           >
                             {col}
                           </th>
@@ -314,14 +314,14 @@ const CsvUploadPage: React.FC = () => {
                           key={idx}
                           className={
                             idx % 2 === 0
-                              ? "bg-white dark:bg-gray-900/5"
-                              : "bg-gray-50 dark:bg-gray-900/10"
+                              ? "bg-gray-100 dark:bg-white/5"
+                              : "bg-gray-200 dark:bg-white/10"
                           }
                         >
                           {columns.map((col) => (
                             <td
                               key={col}
-                              className="px-3 py-2 align-top border-b text-xs text-gray-700 dark:text-gray-200"
+                              className="px-3 py-2 align-top border-b text-xs text-white dark:text-black"
                             >
                               {String(row[col] ?? "")}
                             </td>
@@ -332,7 +332,7 @@ const CsvUploadPage: React.FC = () => {
                   </table>
                 </div>
               ) : (
-                <div className="py-12 text-center text-gray-400">
+                <div className="py-12 text-center text-gray-500">
                   No preview available yet — pick a CSV to see a preview here.
                 </div>
               )}

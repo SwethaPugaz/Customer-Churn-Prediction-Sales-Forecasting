@@ -1,13 +1,13 @@
 import { ArcElement, Chart as ChartJS, Legend, Tooltip } from "chart.js";
 import { Download } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Doughnut } from "react-chartjs-2";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 type SegResponse = Record<string, number>;
 
-export default function ChurnSegmentationx() {
+export default function ChurnSegmentationx(): JSX.Element {
   const [data, setData] = useState<SegResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,60 +37,88 @@ export default function ChurnSegmentationx() {
     };
   }, []);
 
+  // Desired order and colors
   const order = ["High Risk", "Medium Risk", "Low Risk"];
   const colors = ["#ef4444", "#fbbf24", "#34d399"]; // red, yellow, green
+  const fallbackColor = "#60a5fa";
 
-  const chart = React.useMemo(() => {
+  // Ordered labels: ensure High/Medium/Low first (if present), then extras in stable order
+  const orderedLabels = useMemo(() => {
+    if (!data) return [] as string[];
+    const presentOrdered = order.filter((k) => k in data);
+    const extras = Object.keys(data).filter((k) => !presentOrdered.includes(k));
+    return [...presentOrdered, ...extras];
+  }, [data]);
+
+  // chart data memoized and following orderedLabels
+  const chart = useMemo(() => {
     if (!data) return null;
-    const labels = order.filter((k) => k in data);
-    const extra = Object.keys(data).filter((k) => !labels.includes(k));
-    const allLabels = [...labels, ...extra];
-    const values = allLabels.map((k) => data[k] ?? 0);
-    const bg = allLabels.map((k, i) => colors[i] ?? "#60a5fa");
-
+    const labels = orderedLabels;
+    const values = labels.map((k) => data[k] ?? 0);
+    const bg = labels.map((k, i) => colors[i] ?? fallbackColor);
     return {
-      labels: allLabels,
+      labels,
       datasets: [
         {
           data: values,
           backgroundColor: bg,
-          borderColor: bg.map((c) => c),
+          borderColor: bg,
           borderWidth: 1,
         },
       ],
     } as any;
-  }, [data]);
+  }, [data, orderedLabels]);
 
-  function exportCSV() {
-    if (!data) return;
-    const rows = [
-      "segment,count",
-      ...Object.entries(data).map(([k, v]) => `${k},${v}`),
-    ];
-    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `churn_segmentation.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  const summary = React.useMemo(() => {
+  // Summary (percentages) aligned to orderedLabels
+  const summary = useMemo(() => {
     if (!data) return [];
     const total = Object.values(data).reduce((s, v) => s + v, 0);
-    const entries = Object.entries(data).map(([k, v]) => ({
-      label: k,
-      value: v,
-    }));
-    entries.sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label));
-    return entries.map((e, i) => ({
-      label: e.label,
-      value: e.value,
-      pct: `${Math.round((e.value / Math.max(1, total)) * 100)}%`,
-      color: colors[i] ?? "#60a5fa",
-    }));
-  }, [data]);
+    return orderedLabels.map((label, i) => {
+      const value = data[label] ?? 0;
+      return {
+        label,
+        value,
+        pct: `${Math.round((value / Math.max(1, total)) * 100)}%`,
+        color: colors[i] ?? fallbackColor,
+      };
+    });
+  }, [data, orderedLabels]);
+
+  // Faster, ordered CSV export
+  async function exportCSV() {
+    if (!data || orderedLabels.length === 0) return;
+    // Build CSV rows in memory (small overhead). This is fast for tens/hundreds of rows.
+    const header = ["segment", "count"];
+    const rows: string[] = [];
+    rows.push(header.join(","));
+    for (const label of orderedLabels) {
+      const count = data[label] ?? 0;
+      // Escape quotes if any (not likely here) — keep CSV safe
+      const safeLabel = `"${String(label).replace(/"/g, '""')}"`;
+      rows.push([safeLabel, String(count)].join(","));
+    }
+
+    try {
+      const blob = new Blob([rows.join("\n")], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const filename = `churn_segmentation_${new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")}.csv`;
+      // Use a short defer to ensure UI updates before download (helps with huge payloads)
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      // For some browsers, clicking immediately from JS can block UI briefly on huge blobs;
+      // scheduling the click keeps it responsive.
+      requestAnimationFrame(() => a.click());
+      // release url
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
+  }
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
@@ -101,7 +129,17 @@ export default function ChurnSegmentationx() {
         <div className="flex items-center gap-2">
           <button
             onClick={exportCSV}
-            className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+            disabled={!data || loading || orderedLabels.length === 0}
+            className={`flex items-center px-3 py-1 rounded text-xs ${
+              !data || loading || orderedLabels.length === 0
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
+            title={
+              !data || loading || orderedLabels.length === 0
+                ? "No data to export"
+                : "Export CSV"
+            }
           >
             <Download className="w-4 h-4 mr-1" /> Export
           </button>
@@ -133,7 +171,7 @@ export default function ChurnSegmentationx() {
           </div>
 
           {/* Legend below chart → left aligned */}
-          <div className="mt-4 text-sm w-full text-left">
+          {/* <div className="mt-4 text-sm w-full text-left">
             {summary.map((s) => (
               <div key={s.label} className="flex items-center gap-2 mt-2">
                 <span
@@ -146,17 +184,17 @@ export default function ChurnSegmentationx() {
                 </span>
               </div>
             ))}
-          </div>
+          </div> */}
         </div>
 
-        {/* Right: Big Centered Counts */}
+        {/* Right: Big Centered Counts (respect orderedLabels) */}
         <div className="flex-1 p-6 flex flex-col justify-center items-center">
           <div className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6 underline">
             Detailed Counts
           </div>
-          <div className="space-y-6 text-center">
+          <div className="space-y-6 text-center w-full">
             {data &&
-              Object.entries(data).map(([k, v]) => (
+              orderedLabels.map((k, idx) => (
                 <div
                   key={k}
                   className="flex flex-col items-center justify-center"
@@ -164,14 +202,12 @@ export default function ChurnSegmentationx() {
                   <div className="flex items-center gap-3 text-2xl font-semibold">
                     <span
                       className="inline-block w-6 h-6 rounded-full"
-                      style={{
-                        background: colors[order.indexOf(k)] ?? "#60a5fa",
-                      }}
+                      style={{ background: colors[idx] ?? fallbackColor }}
                     />
                     <div>{k}</div>
                   </div>
                   <div className="text-4xl font-extrabold text-blue-600 mt-2">
-                    {v}
+                    {data[k]}
                   </div>
                 </div>
               ))}

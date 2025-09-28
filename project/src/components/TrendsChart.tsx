@@ -144,7 +144,7 @@ export const TrendsChart: React.FC<{ filters: FilterState }> = ({
           </div>
 
           <div className="flex flex-col items-center justify-center">
-            <svg width="140" height="140" viewBox="0 0 120 120">
+            <svg width="240" height="240" viewBox="0 0 120 120">
               {(() => {
                 const total = ageGroups.reduce((sum, a) => sum + a.value, 0);
                 let startAngle = 0;
@@ -175,8 +175,8 @@ export const TrendsChart: React.FC<{ filters: FilterState }> = ({
                   <span
                     style={{
                       background: PIE_COLORS[i % PIE_COLORS.length],
-                      width: 14,
-                      height: 14,
+                      width: 16,
+                      height: 16,
                       display: "inline-block",
                       borderRadius: 3,
                       marginRight: 6,

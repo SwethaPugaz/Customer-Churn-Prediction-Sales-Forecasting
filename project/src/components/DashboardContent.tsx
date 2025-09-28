@@ -32,6 +32,7 @@ import ChurnSegmentationx from "./pieChart";
 // };
 
 import React, { useEffect, useState } from "react";
+import ChurnRiskSummary from "./ChurnRiskBoard";
 
 type Churner = {
   customer_id: string;
@@ -349,12 +350,12 @@ function ChurnRateTrends() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Churn Rate Trends</h2>
         <div className="flex items-center gap-2">
-          <button
+          {/* <button
             onClick={exportCSV}
             className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
           >
             <Download className="w-4 h-4 mr-1" /> Export
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -822,9 +823,10 @@ export const DashboardContent: React.FC = () => {
 
             <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
               <div className="flex-1 min-w-0 flex flex-col gap-6">
-                <ChurnRateTrends />
+                <ChurnRateTrends />,
+                <ChurnRiskSummary />
                 {/* Churn Risk Summary Card */}
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-6 flex flex-col items-center justify-center">
+                {/* <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-6 flex flex-col items-center justify-center">
                   <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300 mb-2">
                     Churn Risk Summary
                   </h3>
@@ -854,7 +856,7 @@ export const DashboardContent: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
               <div className="flex-1 min-w-0">
                 <ChurnDrivers />

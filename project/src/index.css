@@ -1,3 +1,77 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Force the entire app page and component backgrounds to white */
+:root {
+	--page-bg: #ffffff;
+}
+
+html, body, #root {
+	background-color: var(--page-bg) !important;
+	color: inherit;
+}
+
+/* Override common Tailwind background utility classes and known card classes to white so components render with white backgrounds */
+.bg-gray-50,
+.bg-white,
+.bg-gray-100,
+.bg-gray-200,
+.bg-gray-300,
+.bg-gray-400,
+.bg-gray-500,
+.bg-gray-600,
+.bg-gray-700,
+.bg-gray-800,
+.bg-gray-900,
+.card,
+.card-green,
+.overlay-white,
+.panel,
+.widget {
+	background-color: #ffffff !important;
+}
+
+/* Ensure dark variants do not apply dark backgrounds */
+.dark .bg-gray-900,
+.dark .bg-gray-800,
+.dark .bg-gray-700,
+.dark .bg-gray-600,
+.dark .bg-gray-500 {
+	background-color: #ffffff !important;
+}
+
+/* Neutralize background images/gradients on cards */
+.card-green,
+.card,
+.overlay-white {
+	background-image: none !important;
+}
+
+/* Give white cards a subtle border/shadow so they separate from the page */
+.card, .card-green, .panel, .widget, .overlay-white {
+	border: 1px solid rgba(0,0,0,0.06);
+	box-shadow: 0 1px 4px rgba(16,24,40,0.04);
+}
+
+/* Preserve explicit white text utility where used */
+.text-white { color: #ffffff !important; }
+
+/* Make all text use black by default to override utility color classes */
+:root {
+	--global-text: #000000;
+}
+
+html, body, #root {
+	color: var(--global-text) !important;
+}
+
+/* Broad catch-all for Tailwind text utilities (e.g., text-gray-700, text-blue-600) */
+[class*="text-"] {
+	color: var(--global-text) !important;
+}
+
+/* Re-assert white text where explicitly desired */
+.text-white {
+	color: #ffffff !important;
+}

@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from "chart.js";
 import { Download } from "lucide-react";
-import React, { useEffect, useState } from "react";
+
 import { Line } from "react-chartjs-2";
 import CsvUploadPage from "./CsvUploadPage";
 import { DemandForecastCard } from "./DemandForecastCard";
@@ -23,15 +23,26 @@ import ChurnSegmentationx from "./pieChart";
 
 // Dynamic Risk Scoring & Customer Profiles
 
+// type Churner = {
+//   churn_probability: number; // 0.0 - 1.0
+//   customer_id: string;
+//   last_purchase_date: string; // ISO date string
+//   subscription_status: string;
+//   total_cancellations: number;
+// };
+
+import React, { useEffect, useState } from "react";
+
 type Churner = {
-  churn_probability: number; // 0.0 - 1.0
   customer_id: string;
-  last_purchase_date: string; // ISO date string
-  subscription_status: string;
-  total_cancellations: number;
+  churn_probability: number;
+  subscription_status?: string;
+  last_purchase_date?: string;
+  total_cancellations?: number;
+  [key: string]: any;
 };
 
-export default function TopChurnCustomers() {
+export default function TopChurnCustomers(): JSX.Element {
   const [churners, setChurners] = useState<Churner[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +99,8 @@ export default function TopChurnCustomers() {
 
   useEffect(() => setPage(1), [search, sortBy, customerCount]);
 
-  function formatDate(d: string) {
+  function formatDate(d: string | undefined) {
+    if (!d) return "";
     try {
       const dt = new Date(d);
       return dt.toLocaleDateString();
@@ -103,37 +115,7 @@ export default function TopChurnCustomers() {
         <h2 className="text-2xl font-extrabold text-white">
           Top Customers Likely to Churn
         </h2>
-        <div className="flex gap-2">
-          {/* <button
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-lg"
-            onClick={() => {
-              const rows = paginated.map((c) => ({
-                customer_id: c.customer_id,
-                churn_probability: c.churn_probability,
-                last_purchase_date: c.last_purchase_date,
-                subscription_status: c.subscription_status,
-                total_cancellations: c.total_cancellations,
-              }));
-              const csv = [
-                Object.keys(rows[0] || {}).join(","),
-                ...rows.map((r) =>
-                  Object.values(r)
-                    .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-                    .join(",")
-                ),
-              ].join("\n");
-              const blob = new Blob([csv], { type: "text/csv" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `churners_page_${page}.csv`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-          >
-            <Download className="w-5 h-5 mr-2" /> Export
-          </button> */}
-        </div>
+        <div className="flex gap-2">{/* Export button commented out */}</div>
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
@@ -192,7 +174,8 @@ export default function TopChurnCustomers() {
         <div className="py-8 text-center text-red-400">Error: {error}</div>
       ) : (
         <>
-          <table className="w-full text-lg text-white">
+          {/* Remove global text color on table and set explicit cell colors */}
+          <table className="w-full text-lg">
             <thead>
               <tr className="text-left text-gray-300">
                 <th className="py-2">Customer ID</th>
@@ -208,13 +191,22 @@ export default function TopChurnCustomers() {
                   key={c.customer_id + i}
                   className="border-b border-gray-700"
                 >
-                  <td className="py-2 font-bold">{c.customer_id}</td>
-                  <td className="py-2">
+                  {/* override colors so rows are visible in light mode (black) and stay visible in dark mode */}
+                  <td className="py-2 font-bold text-black dark:text-white">
+                    {c.customer_id}
+                  </td>
+                  <td className="py-2 text-black dark:text-white">
                     {Math.round(c.churn_probability * 100)}%
                   </td>
-                  <td className="py-2">{c.subscription_status}</td>
-                  <td className="py-2">{formatDate(c.last_purchase_date)}</td>
-                  <td className="py-2">{c.total_cancellations}</td>
+                  <td className="py-2 text-black dark:text-white">
+                    {c.subscription_status}
+                  </td>
+                  <td className="py-2 text-black dark:text-white">
+                    {formatDate(c.last_purchase_date)}
+                  </td>
+                  <td className="py-2 text-black dark:text-white">
+                    {c.total_cancellations}
+                  </td>
                 </tr>
               ))}
             </tbody>
